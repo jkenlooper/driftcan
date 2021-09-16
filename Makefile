@@ -1,4 +1,3 @@
-#MAKEFLAGS += --warn-undefined-variables
 SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := all
@@ -18,33 +17,31 @@ FORCE:
 
 HOME_DIR = ${HOME}/tmp/driftcan-computer-example
 
-target_driftcan_paths := $(patsubst %.driftcan, %, $(shell find . -name '*.driftcan'))
-target_driftcan_bundles := $(patsubst %.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
+target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan'))
+target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
+
+objects := .manifest $(target_driftcan_paths) $(target_driftcan_bundles)
 
 .PHONY: all
-all: $(target_driftcan_paths) $(target_driftcan_bundles)
+all: $(objects)
 
-#@sed "s/ /\n/g" <<< "$^" | sed "s:^:${HOME_DIR}/:g" > $@
-.manifest: $(target_driftcan_paths) $(target_driftcan_bundles)
-	@echo "making .manifest"
-	@sed "s/ /\n/g" <<< "$^" > $@
+.manifest: $(target_driftcan_paths)
+	@echo "making $@"
+	@rm -f $@
+	@printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@
+
+.manifest-bundles: $(target_driftcan_bundles)
+	@echo "making $@"
+	@rm -f $@
+	@printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@
 
 %: %.driftcan
-	@echo "prereq is $<"
-	@echo "target is $@"
 	cp -r ${HOME_DIR}/$@ $@
 
 %: %.driftcan-bundle
-	@echo "prereq is $<"
-	@echo "target is $@"
 	cd ${HOME_DIR}/$@ \
 	&& git bundle create ${PWD}/$@ --all
 
-%.driftcan-bundle-manifest: $(patsubst %.driftcan-bundle, %, $(target_driftcan_bundles))
-	echo "bundle: $<"
-	git bundle list-heads $< | cut -f1 -d ' ' | sort --unique > $@
-
-	#cp -r ${HOME_DIR}/$@ $@
 
 .PHONY: restore
 restore: .manifest
@@ -63,7 +60,7 @@ restore: .manifest
 
 
 .PHONY: clone
-clone: .manifest
+clone:: .manifest
 	rsync --archive \
 		--delay-updates \
 		--itemize-changes \
@@ -77,3 +74,19 @@ clone: .manifest
 		--exclude=package-lock.json \
 		${HOME_DIR}/ .
 
+clone:: .manifest-bundles
+	@echo "Updating git bundles"
+	@while read bundle_path; do \
+		echo "Checking git repo: $${bundle_path}"; \
+		tmpfile_a=$$(mktemp); \
+		tmpfile_b=$$(mktemp); \
+		cd ${HOME_DIR}/$${bundle_path} && \
+			git ls-remote ${PWD}/$${bundle_path} | sort --unique > $$tmpfile_a && \
+			git ls-remote . | sort --unique > $$tmpfile_b && \
+			diff -b $$tmpfile_a $$tmpfile_b > /dev/null || \
+			git bundle create ${PWD}/$${bundle_path} --all; \
+	done < $<
+
+.PHONY: clean
+clean:
+	printf '%s\0' $(objects) | xargs -0 rm -rf
