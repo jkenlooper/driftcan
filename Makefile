@@ -20,7 +20,7 @@ HOME_DIR = ${HOME}/tmp/driftcan-computer-example
 target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan'))
 target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
 
-objects := .manifest $(target_driftcan_paths) $(target_driftcan_bundles)
+objects := .manifest .manifest-bundles $(target_driftcan_paths) $(target_driftcan_bundles)
 
 .PHONY: all
 all: $(objects)
@@ -35,8 +35,11 @@ all: $(objects)
 	@rm -f $@
 	@printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@
 
+# Preserve the modified time of the target and match that with the prereq when
+# copying.
 %: %.driftcan
-	cp -r ${HOME_DIR}/$@ $@
+	cp --archive --update ${HOME_DIR}/$@ $@
+	touch --time=mtime --date="$$(stat --format='%y' $@)" $<
 
 %: %.driftcan-bundle
 	cd ${HOME_DIR}/$@ \
@@ -55,7 +58,6 @@ restore: .manifest
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \
-		--exclude=package-lock.json \
 		. ${HOME_DIR}/
 
 
@@ -71,7 +73,6 @@ clone:: .manifest
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \
-		--exclude=package-lock.json \
 		${HOME_DIR}/ .
 
 clone:: .manifest-bundles
