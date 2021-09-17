@@ -15,7 +15,7 @@ inspect.%:
 # Use $* to get the stem
 FORCE:
 
-HOME_DIR = ${HOME}/tmp/driftcan-computer-example
+HOME_DIR = ${HOME}
 
 target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan'))
 target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
@@ -38,7 +38,7 @@ all: $(objects)
 # Preserve the modified time of the target and match that with the prereq when
 # copying.
 %: %.driftcan
-	cp --archive --update ${HOME_DIR}/$@ $@
+	cp --archive --update ${HOME_DIR}/$@ $$(dirname $@)
 	touch --time=mtime --date="$$(stat --format='%y' $@)" $<
 
 %: %.driftcan-bundle
@@ -78,6 +78,7 @@ clone:: .manifest
 clone:: .manifest-bundles
 	@echo "Updating git bundles"
 	@while read bundle_path; do \
+		if [[ -n "$${bundle_path}" ]]; then \
 		echo "Checking git repo: $${bundle_path}"; \
 		tmpfile_a=$$(mktemp); \
 		tmpfile_b=$$(mktemp); \
@@ -86,6 +87,7 @@ clone:: .manifest-bundles
 			git ls-remote . | sort --unique > $$tmpfile_b && \
 			diff -b $$tmpfile_a $$tmpfile_b > /dev/null || \
 			git bundle create ${PWD}/$${bundle_path} --all; \
+		fi \
 	done < $<
 
 .PHONY: clean
