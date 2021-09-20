@@ -58,6 +58,7 @@ restore: .manifest
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \
+		--exclude=lost+found \
 		. ${HOME_DIR}/
 
 
@@ -73,6 +74,7 @@ clone:: .manifest
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \
+		--exclude=lost+found \
 		${HOME_DIR}/ .
 
 clone:: .manifest-bundles
