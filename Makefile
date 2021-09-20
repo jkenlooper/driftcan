@@ -4,6 +4,8 @@ SHELL := bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+DRIFTCAN_VERSION := "0.0.1"
+
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 project_dir := $(dir $(mkfile_path))
 
@@ -20,10 +22,13 @@ HOME_DIR = ${HOME}
 target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan'))
 target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
 
-objects := .manifest .manifest-bundles $(target_driftcan_paths) $(target_driftcan_bundles)
+objects := ._driftcan_version .manifest .manifest-bundles $(target_driftcan_paths) $(target_driftcan_bundles)
 
 .PHONY: all
 all: $(objects)
+
+._driftcan_version:
+	@echo ${DRIFTCAN_VERSION} > $@
 
 .manifest: $(target_driftcan_paths)
 	@echo "making $@"
@@ -41,6 +46,9 @@ all: $(objects)
 	cp --archive --update ${HOME_DIR}/$@ $$(dirname $@)
 	touch --time=mtime --date="$$(stat --format='%y' $@)" $<
 
+# TODO: if there are paths within the git repository that also have .driftcan
+# files then this doesn't work right since it would create a file that could be
+# a directory if the .driftcan happened first.
 %: %.driftcan-bundle
 	cd ${HOME_DIR}/$@ \
 	&& git bundle create ${PWD}/$@ --all
