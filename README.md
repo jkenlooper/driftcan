@@ -27,3 +27,18 @@ order to understand what it does.
 ```bash
 make
 ```
+
+## Testing with Bats
+
+Uses [Bats-core: Bash Automated Testing
+System](https://github.com/bats-core/bats-core) to run unit tests.  The
+dependencies for using bats-core are installed via git submodules.
+
+
+```bash
+# Run all unit tests (test/*.bats)
+./test.sh
+
+# Or watch for changes and run tests
+./dev.sh
+```
