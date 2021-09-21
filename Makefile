@@ -25,20 +25,34 @@ target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -na
 objects := ._driftcan_version .manifest .manifest-bundles $(target_driftcan_paths) $(target_driftcan_bundles)
 
 .PHONY: all
-all: $(objects)
+all: check_version $(objects)
 
 ._driftcan_version:
 	@echo ${DRIFTCAN_VERSION} > $@
 
+.PHONY: check_version
+check_version: ._driftcan_version
+	test "$$(cat $<)" = "$(DRIFTCAN_VERSION)"
+
 .manifest: $(target_driftcan_paths)
-	@echo "making $@"
-	@rm -f $@
-	@printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@
+	@if [ -z "$(target_driftcan_paths)" ]; then \
+		echo "No .driftcan files found."; \
+		touch $@; \
+	else \
+		echo "making $@"; \
+		rm -f $@; \
+		printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@; \
+	fi
 
 .manifest-bundles: $(target_driftcan_bundles)
-	@echo "making $@"
-	@rm -f $@
-	@printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@
+	@if [ -z "$(target_driftcan_bundles)" ]; then \
+		echo "No .driftcan-bundle files found."; \
+		touch $@; \
+	else \
+		echo "making $@"; \
+		rm -f $@; \
+		printf '%s\0' $^ | xargs -0 -I {} echo {} >> $@; \
+	fi
 
 # Preserve the modified time of the target and match that with the prereq when
 # copying.
@@ -56,6 +70,7 @@ all: $(objects)
 
 .PHONY: restore
 restore: .manifest
+	@echo "Restoring driftcan files from ${PWD} to ${HOME_DIR}/"
 	rsync --archive \
 		--delay-updates \
 		--itemize-changes \
@@ -72,6 +87,7 @@ restore: .manifest
 
 .PHONY: clone
 clone:: .manifest
+	@echo "Cloning driftcan files from ${HOME_DIR}/ to ${PWD}"
 	rsync --archive \
 		--delay-updates \
 		--itemize-changes \
@@ -86,7 +102,7 @@ clone:: .manifest
 		${HOME_DIR}/ .
 
 clone:: .manifest-bundles
-	@echo "Updating git bundles"
+	@echo "Updating git bundles from ${HOME_DIR}/ to ${PWD}"
 	@while read bundle_path; do \
 		if [[ -n "$${bundle_path}" ]]; then \
 		echo "Checking git repo: $${bundle_path}"; \
@@ -102,4 +118,5 @@ clone:: .manifest-bundles
 
 .PHONY: clean
 clean:
+	@echo "Removing driftcan files from ${PWD}"
 	printf '%s\0' $(objects) | xargs -0 rm -rf
