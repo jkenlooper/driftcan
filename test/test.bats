@@ -68,7 +68,7 @@ teardown () {
   # Assert
   assert_output --partial "No .driftcan-bundle files found."
 
-  run test ! -s .manifest-bundle
+  run test ! -s .manifest-bundles
   assert_success
 }
 
@@ -87,7 +87,7 @@ teardown () {
   # Assert
   assert_output --partial "Restoring driftcan files from ${PWD} to ${fake_home_dir}/"
 
-  run test ! -s .manifest-bundle
+  run test ! -s .manifest-bundles
   assert_success
 }
 
@@ -111,7 +111,7 @@ teardown () {
 
   run test ! -s .manifest
   assert_success
-  run test ! -s .manifest-bundle
+  run test ! -s .manifest-bundles
   assert_success
   run tree $fake_home_dir
   assert_output "$existing_dir_snapshot"
@@ -151,7 +151,7 @@ teardown () {
   # creates a .manifest file
   run test -s .manifest
   assert_success
-  run test ! -s .manifest-bundle
+  run test ! -s .manifest-bundles
   assert_success
 
   # doesn't modify home dir
@@ -204,7 +204,7 @@ teardown () {
   # creates a .manifest file
   run test -s .manifest
   assert_success
-  run test ! -s .manifest-bundle
+  run test ! -s .manifest-bundles
   assert_success
 
   # doesn't modify home dir
@@ -218,6 +218,52 @@ teardown () {
   assert_success
 }
 
+@test "Creates links for driftcan-link files" {
+  # Arrange
+  fake_home_dir=$(mktemp -d)
+  echo "an existing file" > $fake_home_dir/existing_file.txt
+  touch existing_file.txt.driftcan-link
+  mkdir -p $fake_home_dir/parks/{yellowstone,yosemite}
+  echo "a file in a directory" > $fake_home_dir/parks/yellowstone/test1.txt
+  mkdir -p $(dirname parks/yellowstone/test1.txt)
+  touch parks/yellowstone/test1.txt.driftcan-link
+  echo "a file in a directory" > $fake_home_dir/parks/yosemite/test2.txt
+  mkdir -p $(dirname parks/yosemite/test2.txt)
+  touch parks/yosemite/test2.txt.driftcan-link
+  mkdir -p $fake_home_dir/parks/arches/
+  echo "a file in a directory" > $fake_home_dir/parks/arches/test3.txt
+  touch parks/arches.driftcan-link
+  existing_dir_snapshot=$(tree $fake_home_dir)
+  md5sum $(find $fake_home_dir -type f) > checksums
+  cd $fake_home_dir
+  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt parks/arches/test3.txt > $tmp_dir/target_files_checksums
+  cd -
+
+  # Act
+  run make HOME_DIR=${fake_home_dir}
+  run make HOME_DIR=${fake_home_dir} clone
+
+  # Assert
+  assert_output --partial "Linking driftcan-link files from ${fake_home_dir}/ to ${PWD}"
+
+  # creates a .manifest-link file
+  run test -s .manifest-links
+  assert_success
+  run test ! -s .manifest
+  assert_success
+  run test ! -s .manifest-bundles
+  assert_success
+
+  # doesn't modify home dir
+  run tree $fake_home_dir
+  assert_output "$existing_dir_snapshot"
+  run md5sum --check checksums
+  assert_success
+
+  # links the files
+  run md5sum --check target_files_checksums
+  assert_success
+}
 
 @test "Can remove all tracked files by using 'make clean'" {
   # Arrange
@@ -248,7 +294,7 @@ teardown () {
   # deletes .manifest file
   run test ! -e .manifest
   assert_success
-  run test ! -e .manifest-bundle
+  run test ! -e .manifest-bundles
   assert_success
 
   # doesn't modify home dir

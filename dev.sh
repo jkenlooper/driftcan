@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-ls -d **/* | entr ./test.sh
+ls -d **/* Makefile | entr ./test.sh
