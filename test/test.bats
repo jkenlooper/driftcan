@@ -131,10 +131,13 @@ teardown () {
   echo "a file in a directory" > $fake_home_dir/parks/yosemite/test2.txt
   mkdir -p $(dirname parks/yosemite/test2.txt)
   touch parks/yosemite/test2.txt.driftcan
+  mkdir -p $fake_home_dir/parks/arches/
+  echo "a file in a directory" > $fake_home_dir/parks/arches/test3.txt
+  touch parks/arches.driftcan
   existing_dir_snapshot=$(tree $fake_home_dir)
   md5sum $(find $fake_home_dir -type f) > checksums
   cd $fake_home_dir
-  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt > $tmp_dir/target_files_checksums
+  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt parks/arches/test3.txt > $tmp_dir/target_files_checksums
   cd -
 
   # Act
@@ -161,6 +164,60 @@ teardown () {
   run md5sum --check target_files_checksums
   assert_success
 }
+
+@test "Clones driftcan bundle files" {
+  skip "Handling of driftcan bundle files will change."
+  # Arrange
+  fake_home_dir=$(mktemp -d)
+  echo "an existing file" > $fake_home_dir/existing_file.txt
+  touch existing_file.txt.driftcan
+  mkdir -p $fake_home_dir/parks/{yellowstone,yosemite}
+  echo "a file in a directory" > $fake_home_dir/parks/yellowstone/test1.txt
+  mkdir -p $(dirname parks/yellowstone/test1.txt)
+  touch parks/yellowstone/test1.txt.driftcan
+  echo "a file in a directory" > $fake_home_dir/parks/yosemite/test2.txt
+  mkdir -p $(dirname parks/yosemite/test2.txt)
+  touch parks/yosemite/test2.txt.driftcan
+
+  mkdir -p $fake_home_dir/parks/arches/
+  cd $fake_home_dir/parks/arches/
+  git init
+  echo "a file in a git repository" > $fake_home_dir/parks/arches/test3.txt
+  git add .
+  git commit -m 'testing'
+  cd -
+
+  existing_dir_snapshot=$(tree $fake_home_dir)
+  md5sum $(find $fake_home_dir -type f) > checksums
+  cd $fake_home_dir
+  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt parks/arches/test3.txt > $tmp_dir/target_files_checksums
+  cd -
+
+  # Act
+  run make HOME_DIR=${fake_home_dir}
+  run make HOME_DIR=${fake_home_dir} clone
+
+  # Assert
+  assert_output --partial "Cloning driftcan files from ${fake_home_dir}/ to ${PWD}"
+  assert_output --partial "Updating git bundles from ${fake_home_dir}/ to ${PWD}"
+
+  # creates a .manifest file
+  run test -s .manifest
+  assert_success
+  run test ! -s .manifest-bundle
+  assert_success
+
+  # doesn't modify home dir
+  run tree $fake_home_dir
+  assert_output "$existing_dir_snapshot"
+  run md5sum --check checksums
+  assert_success
+
+  # clones the files
+  run md5sum --check target_files_checksums
+  assert_success
+}
+
 
 @test "Can remove all tracked files by using 'make clean'" {
   # Arrange
