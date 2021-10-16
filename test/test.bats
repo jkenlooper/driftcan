@@ -134,10 +134,19 @@ teardown () {
   mkdir -p $fake_home_dir/parks/arches/
   echo "a file in a directory" > $fake_home_dir/parks/arches/test3.txt
   touch parks/arches.driftcan
+  # create a directory and a symbolic link to it
+  mkdir -p $fake_home_dir/more-parks/glacier/
+  echo "a file in a directory" > $fake_home_dir/more-parks/glacier/test4.txt
+  cd $fake_home_dir/more-parks/glacier
+  ln -s test4.txt test4a.txt
+  cd -
+  ln -s $fake_home_dir/more-parks/glacier $fake_home_dir/parks/glacier
+  touch parks/glacier.driftcan
+  # add checksums
   existing_dir_snapshot=$(tree $fake_home_dir)
   md5sum $(find $fake_home_dir -type f) > checksums
   cd $fake_home_dir
-  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt parks/arches/test3.txt > $tmp_dir/target_files_checksums
+  md5sum existing_file.txt parks/yellowstone/test1.txt parks/yosemite/test2.txt parks/arches/test3.txt parks/glacier/test4.txt > $tmp_dir/target_files_checksums
   cd -
 
   # Act
@@ -162,6 +171,14 @@ teardown () {
 
   # clones the files
   run md5sum --check target_files_checksums
+  assert_success
+
+  # dereferences any driftcan symlinks
+  run test -f parks/glacier/test4.txt
+  assert_success
+
+  # keeps symlinks that are not directly referred to with driftcan
+  run test -L parks/glacier/test4a.txt
   assert_success
 }
 

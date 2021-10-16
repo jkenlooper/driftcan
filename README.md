@@ -19,14 +19,32 @@ I usually run into these problems when simply using a backup drive and copying f
 ## Usage
 
 In the backup directory; create empty `example.driftcan` files for paths that should be
-backed up.  For Git repositories; create empty `example.driftcan-bundle` files.
+backed up.  For Git repositories; create empty `example-repo.driftcan-bundle` files.
+Copy the `Makefile` from this project to the backup directory that has the
+`.driftcan` files. Execute the `make` command in that backup directory and then
+execute the `make clone` command to rsync all the files referred to by the driftcan
+files.
+
+```bash
+#ls $HOME/
+# example example-repo Documents/ other-stuff
+#cp Makefile /path/to/backup-directory/
+#touch /path/to/backup-directory/example.driftcan
+#touch /path/to/backup-directory/Documents.driftcan
+#touch /path/to/backup-directory/example-repo.driftcan-bundle
+
+# In your backup directory (usually on an external drive)
+#cd /path/to/backup-directory
+#make
+#make clone
+#ls /path/to/backup-directory/
+# example example.driftcan 
+# Documents/ Documents.driftcan
+# example-repo example-repo.driftcan-bundle
+```
 
 _TODO_ Add more documentation.  For now, review the [Makefile](Makefile) in
 order to understand what it does.
-
-```bash
-make
-```
 
 ## Testing with Bats
 

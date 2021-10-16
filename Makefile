@@ -4,7 +4,7 @@ SHELL := bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-DRIFTCAN_VERSION := "0.1.0-alpha.1"
+DRIFTCAN_VERSION := "0.1.0-alpha.2"
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 project_dir := $(dir $(mkfile_path))
@@ -19,10 +19,11 @@ FORCE:
 
 HOME_DIR = ${HOME}
 
+
 # TODO: rename .driftcan target files to .driftcan-path
-target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan'))
-target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle'))
-target_driftcan_links := $(patsubst ./%.driftcan-link, %, $(shell find . -name '*.driftcan-link'))
+target_driftcan_paths := $(patsubst ./%.driftcan, %, $(shell find . -name '*.driftcan' -type f -empty 2> /dev/null))
+target_driftcan_bundles := $(patsubst ./%.driftcan-bundle, %, $(shell find . -name '*.driftcan-bundle' -type f -empty 2> /dev/null))
+target_driftcan_links := $(patsubst ./%.driftcan-link, %, $(shell find . -name '*.driftcan-link' -type f -empty 2> /dev/null))
 
 objects := ._driftcan_version .manifest .manifest-bundles .manifest-links $(target_driftcan_paths) $(target_driftcan_bundles) $(target_driftcan_links)
 
@@ -118,13 +119,14 @@ clone:: .manifest
 		--relative \
 		--recursive \
 		--files-from=.manifest \
-		--copy-links \
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \
 		--exclude=lost+found \
 		${HOME_DIR}/ .
 
+# Use `git ls-remote --refs ` for the bundle and the repo. The `--refs` is used
+# to not show peeled tags (like 'v1.0^{}' ?) or pseudorefs like HEAD.
 clone:: .manifest-bundles
 	@echo "Updating git bundles from ${HOME_DIR}/ to ${PWD}"
 	@while read bundle_path; do \
@@ -133,8 +135,8 @@ clone:: .manifest-bundles
 		tmpfile_a=$$(mktemp); \
 		tmpfile_b=$$(mktemp); \
 		cd ${HOME_DIR}/$${bundle_path} && \
-			git ls-remote ${PWD}/$${bundle_path} | sort --unique > $$tmpfile_a && \
-			git ls-remote . | sort --unique > $$tmpfile_b && \
+			git ls-remote --refs ${PWD}/$${bundle_path} | sort --unique > $$tmpfile_a && \
+			git ls-remote --refs . | sort --unique > $$tmpfile_b && \
 			diff -b $$tmpfile_a $$tmpfile_b > /dev/null || \
 			git bundle create ${PWD}/$${bundle_path} --all; \
 		fi \
