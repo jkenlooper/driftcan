@@ -74,7 +74,7 @@ check_version: ._driftcan_version
 # copying.
 # TODO: if it's a directory; set mtime to the newest file in the directory.
 %: %.driftcan
-	cp --archive --update ${HOME_DIR}/$@ $$(dirname $@)
+	cp --dereference --recursive --preserve --update ${HOME_DIR}/$@ $$(dirname $@)
 	touch --time=mtime --date="$$(stat --format='%y' $@)" $<
 
 # TODO: if there are paths within the git repository that also have .driftcan
@@ -119,6 +119,7 @@ clone:: .manifest
 		--relative \
 		--recursive \
 		--files-from=.manifest \
+		--copy-links \
 		--exclude=.git \
 		--exclude=.vagrant \
 		--exclude=node_modules \

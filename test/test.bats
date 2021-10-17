@@ -174,11 +174,13 @@ teardown () {
   assert_success
 
   # dereferences any driftcan symlinks
+  run test ! -L parks/glacier
+  assert_success
   run test -f parks/glacier/test4.txt
   assert_success
 
-  # keeps symlinks that are not directly referred to with driftcan
-  run test -L parks/glacier/test4a.txt
+  # dereferences symlinks that are not directly referred to with driftcan
+  run test -f parks/glacier/test4a.txt
   assert_success
 }
 
