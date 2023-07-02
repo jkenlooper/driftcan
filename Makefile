@@ -124,6 +124,7 @@ clone:: .manifest
 		--exclude=.vagrant \
 		--exclude=node_modules \
 		--exclude=lost+found \
+		--delete-after \
 		${HOME_DIR}/ .
 
 # Use `git ls-remote --refs ` for the bundle and the repo. The `--refs` is used
