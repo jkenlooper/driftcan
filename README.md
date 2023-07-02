@@ -60,3 +60,15 @@ dependencies for using bats-core are installed via git submodules.
 # Or watch for changes and run tests
 ./dev.sh
 ```
+
+## Contributing
+
+Please contact me or create an issue.
+
+Any submitted changes to this project require the commits to be signed off with
+the [git command option
+'--signoff'](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff).
+This ensures that the committer has the rights to submit the changes under the
+project's license and agrees to the [Developer Certificate of
+Origin](https://developercertificate.org).
+
