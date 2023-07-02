@@ -1,1 +1,0 @@
-ENV{DRIVER}=="usb-storage", RUN+="/usr/bin/sh -c 'test -e /tmp/driftcan-pipe || mkfifo /tmp/driftcan-pipe && echo connected >> /tmp/driftcan-pipe'"
